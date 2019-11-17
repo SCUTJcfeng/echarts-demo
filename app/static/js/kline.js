@@ -24,16 +24,14 @@ $(function () {
         this.fromType = configs.fromType;//区分是不是跨域来的
         this.currency_k_sources = configs.currency_k_types; //k 类型资源
         this.currency_k_types_show = configs.currency_k_types_show;
-        this.currency_server_pwd = 'http://mct.ap-coin.com/currency/kline';
-        this.currency_server_target = 'http://mct.ap-coin.com/currency/kmagic';
+        this.currency_server_pwd = '/currency/kline';
+        this.currency_server_target = '/currency/kmagic';
 
         this.currency_type = configs.currency_type_sources[0][0]; //那种数字货币
         this.currency_k_id = configs.currency_k_id; //id
         this.currency_type_sources = configs.currency_type_sources;//数字货币的种类
         this.currency_type_sources_show = configs.currency_type_sources_show;//展示内容
 
-
-        // this.currency_server_pwd = '/currency/kline';
         this.currency_configs = {
             kParamType:'param',//1minparam:{}
             kDataType:'data', //1mindata:{}
@@ -290,9 +288,9 @@ $(function () {
                     url:self.currency_server_pwd,
                     data:param,
                     success:function (data) {
-                        var _data = JSON.parse(data);
-                        if (_data.code == 'OK'){
-                            self.currency_handleData(_data.data,dataObject);
+                        // var _data = JSON.parse(data);
+                        if (data.code == 'OK'){
+                            self.currency_handleData(data.data,dataObject);
                         }else{
                             self.request_loading_data()
                         }
@@ -310,7 +308,7 @@ $(function () {
             self.request_loading(true);
             $.ajax({
                 type:'get',
-                url:'http://mct.ap-coin.com/currency/kline',
+                url:'/currency/kline',
                 data:param,
                 dataType: "JSONP",
                 success:function (data) {
@@ -674,17 +672,16 @@ $(function () {
                 self.request_loading(true);
                 $.ajax({
                     type:'get',
-                    url:CurrencyKLine.currency_server_target,
+                    url:self.currency_server_target,
                     data:param,
                     success:function (data) {
-                        var _data = JSON.parse(data);
-                        if (_data.code == 'OK'){
+                        if (data.code == 'OK'){
                            if(self.targetState === self.targetStateValue.qs){
-                               self.handle_qs_Data(_data,self.get_currency_kData());
+                               self.handle_qs_Data(data,self.get_currency_kData());
                            }else if(self.targetState === self.targetStateValue.fz){
-                               self.handle_fz_data(_data,self.get_currency_kData());
+                               self.handle_fz_data(data,self.get_currency_kData());
                            }else if(self.targetState === self.targetStateValue.sp){
-                               self.handle_sp_data(_data,self.get_currency_kData());
+                               self.handle_sp_data(data,self.get_currency_kData());
                            }
     
                         }else{
@@ -703,7 +700,7 @@ $(function () {
             self.request_loading(true);
             $.ajax({
                 type:'get',
-                url:'http://mct.ap-coin.com/currency/kmagic',
+                url:'/currency/kmagic',
                 data:param,
                 dataType: "JSONP",
                 success:function (data) {
