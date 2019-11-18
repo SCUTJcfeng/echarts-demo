@@ -23,14 +23,12 @@ $(function () {
 
         this.fromType = configs.fromType;//区分是不是跨域来的
         this.currency_k_sources = configs.currency_k_types; //k 类型资源
-        this.currency_k_types_show = configs.currency_k_types_show;
         this.currency_server_pwd = '/currency/kline';
         this.currency_server_target = '/currency/kmagic';
 
         this.currency_type = configs.currency_type_sources[0][0]; //那种数字货币
         this.currency_k_id = configs.currency_k_id; //id
         this.currency_type_sources = configs.currency_type_sources;//数字货币的种类
-        this.currency_type_sources_show = configs.currency_type_sources_show;//展示内容
 
         this.currency_configs = {
             kParamType:'param',//1minparam:{}
@@ -111,11 +109,11 @@ $(function () {
         currency_html:function () { //添加UI
             var self = this;
 
-            $('.symbol-type').text(self.currency_type_sources_show[0][0]+'实时行情');
+            $('.symbol-type').text(self.currency_type_sources[0][0]+'实时行情');
             //数字货币种类切换
             var coin_show = false;
             var coin_str = ''
-            var coin_sources = this.currency_type_sources_show;
+            var coin_sources = this.currency_type_sources;
             this.currency_type_sources.forEach(function(values,indexs){
                 if (values.length === 1){
                     coin_str += '<div class="one-coin-type">'
@@ -166,7 +164,7 @@ $(function () {
 
 
             //分钟切换
-            var source = this.currency_k_types_show;
+            var source = this.currency_k_types;
             var str = '';
             this.currency_k_sources.forEach(function (value,index) {
                 var className = value + self.currency_configs.classType;
@@ -1090,17 +1088,8 @@ $(function () {
   try{
     var kline = new CurrencyKLine({
         currency_k_id:'chart',
-        currency_k_types:['5m','15m','30m','1h','2h','4h','6h','12h','1d'],
-        currency_k_types_show:['5min','15min','30min','1hour','2hour','4hour','6hour','12hour','24hour'],
-
-        currency_type_sources:[['btc_us'],['eth_btc','eth_us'],['xrp_btc'],['ltc_btc','ltc_us'],['eos_btc'],['ada_btc'],['xlm_btc'],['neo_btc','neo_us'],
-            ['xmr_btc'],
-
-            ],
-        currency_type_sources_show:[['BTC/USD'],['ETH/BTC','ETH/USD'],['XRP/BTC'],['LTC/BTC','LTC/USD'],['EOS/BTC'],['ADA/BTC'],['XLM/BTC'],['NEO/BTC','NEO/USD']
-            ,['XMR/BTC'],
-
-        ],
+        currency_k_types:['1m','5min','30m','1h'],
+        currency_type_sources:[['BTC-USD-191227'],['ETH-USD-191227"']],
         fromType:''
     })
     kline.currency_init();
