@@ -47,7 +47,7 @@ $(function() {
       this.currency_html();
       //组织参数
       this.product_currency_param();
-      //请求数据 1min 中k线
+      //请求数据
       this.request_currency_data(
         this.get_currency_kParam(),
         this.get_currency_kData()
@@ -73,6 +73,8 @@ $(function() {
               xDate: [],
               yData: [],
               volumnData: [],
+              currencyVolumnData: [],
+              indexData: [],
               fzData: [],
               zcData: [], //支撑线数据
               qsData: [],
@@ -235,8 +237,14 @@ $(function() {
           dataObject.spData = [];
           dataObject.zcData = [];
           dataObject.volumnData = [];
+          dataObject.currencyVolumnData = [];
+          dataObject.indexData = [];
           dataObject.yColorData = [];
           //   self.currency_indicator_is_exit();
+          self.request_currency_data(
+            this.get_currency_kParam(),
+            this.get_currency_kData()
+          );
         } else {
           total = total - 1;
         }
@@ -298,35 +306,74 @@ $(function() {
     currency_handleData: function(data, dataObject) {
       // TODO:
       var self = this;
-      var maxArray = data.content.reverse();
-      if (maxArray.length == 0) {
+      if (data.length == 0) {
         self.request_loading_data();
         return;
       }
-      var arrayLength = maxArray.length; //减去200
-      for (var i = 0; i < arrayLength; i++) {
-        var data_obj = maxArray[i];
-        dataObject.xDate.push(data_obj.tradedate);
-        var temp = [];
-        temp.push(parseFloat(data_obj.open)); //open
-        temp.push(parseFloat(data_obj.close)); //close
-        temp.push(parseFloat(data_obj.low)); //low
-        temp.push(parseFloat(data_obj.high)); //high
-        if (temp[0] == 0 || temp[1] == 0) {
-        } else {
-          dataObject.yData.push(temp);
-        }
-        dataObject.volumnData.push(data_obj.volume);
-      }
-      //如果神奇指标勾选着
 
-      if (self.targetState !== "") {
-        // self.product_k_option(dataObject);
-        // self.currency_indicator_is_exit();
-      } else {
-        self.product_k_option(dataObject);
-        self.request_loading(false);
-      }
+      data.forEach(item => {
+        dataObject.xDate.push(item[0]);
+        var yData = item.slice(1, 5);
+        dataObject.yData.push(yData);
+        dataObject.volumnData.push(item[5]);
+        dataObject.currencyVolumnData.push(item[6]);
+        if (item[7] == -1) {
+          var yCoord = yData[3];
+          symbolOffset = [0, "-5px"];
+          symbolRotate = 180;
+          itemStyle = {
+            normal: {
+              color: "white",
+              color0: self.color_style.sFD1050,
+              borderColor: self.color_style.sFD1050,
+              borderColor0: self.color_style.sFD1050,
+              borderWidth: 0.5
+            }
+          };
+        } else {
+          var yCoord = yData[2];
+          symbolOffset = [0, "60%"];
+          symbolRotate = 0;
+          itemStyle = {
+            normal: {
+              color: "white",
+              color0: self.color_style.s0CF49B,
+              borderColor: self.color_style.s0CF49B,
+              borderColor0: self.color_style.s0CF49B,
+              borderWidth: 0.5
+            }
+          };
+        }
+        var colorObj = {
+          value: yData,
+          itemStyle: itemStyle
+        };
+        dataObject.yColorData.push(colorObj);
+        var obj = {
+          symbolSize: "6",
+          symbol: "image://./static/images/k-top.png",
+          symbolRotate: symbolRotate,
+          symbolOffset: symbolOffset,
+          coord: [item[0], yCoord],
+          label: {
+            normal: {
+              show: true,
+              position: "top",
+              formatter: "{b}",
+              textStyle: {
+                fontStyle: "oblique",
+                color: "rgba(255,255,255,0)"
+              }
+            }
+          },
+          itemStyle: {
+            normal: { color: "" }
+          }
+        };
+        dataObject.indexData.push(obj);
+      });
+      self.product_k_option(dataObject);
+      self.request_loading(false);
       if (!this.start) {
         $(".target-qs").click();
         this.start = true;
@@ -337,10 +384,8 @@ $(function() {
     //
     handle_settime_title: function(dataObject) {
       var self = this;
-      var dataArray = self.currency_type.split("_");
       var oldValue = dataObject.yData[dataObject.yData.length - 2][1];
       var newValue = dataObject.yData[dataObject.yData.length - 1][1];
-      var str = dataArray[1].toUpperCase();
       if (newValue > oldValue) {
         $(".new-price .header").css("color", "#008000");
       } else if (newValue === oldValue) {
@@ -349,7 +394,6 @@ $(function() {
         $(".new-price .header").css("color", "#ff0000");
       }
       $(".new-price .header").text(newValue + "   ");
-      $(".new-price .middle").text(str === "US" ? "USD" : str);
       self.setTimerAction();
     },
     // 组装k线数据
@@ -361,13 +405,11 @@ $(function() {
       self.currency_option.series[1].itemStyle.normal = self.currency_setBarStyle(
         dataObject.yData
       );
-      if (self.targetState == self.targetStateValue.qs) {
-        self.currency_option.series[0].data = dataObject.yColorData;
-      } else {
-        self.currency_option.series[0].data = dataObject.yData;
-      }
+      self.currency_option.series[0].data = dataObject.yColorData;
+      self.currency_option.series[0].markPoint.data = dataObject.indexData;
+
       if (dataObject.yData.length < 70) {
-        self.currency_option.dataZoom[0].endValue = dataObject.yData.length;
+        self.currency_option.dataZoom[0].startValue = dataObject.yData.length;
       } else {
         self.currency_option.dataZoom[0].startValue =
           dataObject.yData.length - 70;
@@ -668,50 +710,50 @@ $(function() {
     //   }
     // },
     request_kuayu_indecator_data: function() {
-      var self = this;
-      self.request_loading(true);
-      $.ajax({
-        type: "get",
-        url: "/currency/kmagic",
-        data: param,
-        dataType: "JSONP",
-        success: function(data) {
-          var _data = data;
-          if (_data.errorcode == 0) {
-            if (self.targetState === self.targetStateValue.qs) {
-              self.handle_qs_Data(_data, self.get_currency_kData());
-            } else if (self.targetState === self.targetStateValue.fz) {
-              self.handle_fz_data(_data, self.get_currency_kData());
-            } else if (self.targetState === self.targetStateValue.sp) {
-              self.handle_sp_data(_data, self.get_currency_kData());
-            }
-          } else {
-            self.request_loading_data();
-          }
-        },
-        error: function() {
-          self.request_loading_data();
-        }
-      });
+      //   var self = this;
+      //   self.request_loading(true);
+      //   $.ajax({
+      //     type: "get",
+      //     url: "/currency/kmagic",
+      //     data: param,
+      //     dataType: "JSONP",
+      //     success: function(data) {
+      //       var _data = data;
+      //       if (_data.errorcode == 0) {
+      //         if (self.targetState === self.targetStateValue.qs) {
+      //           self.handle_qs_Data(_data, self.get_currency_kData());
+      //         } else if (self.targetState === self.targetStateValue.fz) {
+      //           self.handle_fz_data(_data, self.get_currency_kData());
+      //         } else if (self.targetState === self.targetStateValue.sp) {
+      //           self.handle_sp_data(_data, self.get_currency_kData());
+      //         }
+      //       } else {
+      //         self.request_loading_data();
+      //       }
+      //     },
+      //     error: function() {
+      //       self.request_loading_data();
+      //     }
+      //   });
     },
     //处理qs数据
     handle_qs_Data: function(_data, dataObject) {
       var self = this;
-      var tempArray = [];
-      var data = _data.data.data;
-      data.push(data[data.length - 1]);
-      var feature = data[0].feature;
+      //   var tempArray = [];
+      //   var data = _data.data.data;
+      //   data.push(data[data.length - 1]);
+      //   var feature = data[0].feature;
 
-      var same = 0;
-      for (var i = 0; i < data.length; i++) {
-        var temp = data[i];
-        var trade_date = temp.trade_date;
-        if (trade_date === dataObject.xDate[0]) {
-          same = i;
-          break;
-        }
-      }
-      data = data.slice(same);
+      //   var same = 0;
+      //   for (var i = 0; i < data.length; i++) {
+      //     var temp = data[i];
+      //     var trade_date = temp.trade_date;
+      //     if (trade_date === dataObject.xDate[0]) {
+      //       same = i;
+      //       break;
+      //     }
+      //   }
+      //   data = data.slice(same);
       for (var i = 0; i < data.length; i++) {
         var temp = data[i];
         var yData, symbolOffset, symbolRotate;
@@ -722,7 +764,6 @@ $(function() {
           if (index != -1) {
             yData = dataObject.yData[index][3];
           }
-          url = "";
           symbolOffset = [0, "-5px"];
           symbolRotate = 180;
           itemStyle = {
@@ -742,7 +783,6 @@ $(function() {
               yData = dataObject.yData[index][2];
             }
           }
-          url = "";
           symbolOffset = [0, "60%"];
           symbolRotate = 0;
           itemStyle = {
@@ -764,7 +804,7 @@ $(function() {
 
         var obj = {
           symbolSize: "6",
-          symbol: "image://http://mct.ap-coin.com/static/images/k-top.png",
+          symbol: "image:./static/images/k-top.png",
           symbolRotate: symbolRotate,
           symbolOffset: symbolOffset,
           coord: coord,
@@ -1075,7 +1115,7 @@ $(function() {
   try {
     var kline = new CurrencyKLine({
       currency_k_id: "chart",
-      currency_k_intervals: ["1m", "5min", "30m", "1h"],
+      currency_k_intervals: ["30m", "1m", "30m", "1h"],
       currency_type_sources: [["BTC-USD-191227"], ["ETH-USD-191227"]]
     });
     kline.currency_init();

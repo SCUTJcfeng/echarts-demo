@@ -3,7 +3,7 @@
 '''
 Author: jc feng
 File Created: 2019-11-19 00:05:40
-Last Modified: 2019-11-19 01:19:52
+Last Modified: 2019-11-19 22:39:39
 '''
 
 
@@ -32,7 +32,11 @@ def get_kline():
     interval = request.args.get('interval', '')
     url = f'https://www.okex.com/api/futures/v3/instruments/{contract}/candles?granularity={INTERVAL_MAP[interval]}'
     data_list = requests.get(url).json()
-    result = calc_golden_finger(data_list)
+    new_data_list = []
+    for data in data_list[::-1]:
+        ts, o, h, l, c, v, cv = data
+        new_data_list.append([ts, float(o), float(c), float(l), float(h), int(v), float(cv)])
+    result = calc_golden_finger(new_data_list)
     return PackageTool.response_suc(result)
 
 
