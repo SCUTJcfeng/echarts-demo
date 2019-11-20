@@ -3,10 +3,10 @@
 '''
 Author: jc feng
 File Created: 2019-11-17 23:57:21
-Last Modified: 2019-11-18 00:02:45
+Last Modified: 2019-11-20 23:26:41
 '''
 
 from app import app
 
 
-app.run()
+app.run(host='0.0.0.0', port=80)
