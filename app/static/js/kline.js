@@ -43,13 +43,7 @@ $(function() {
       this.initChart();
       this.currency_chart.setOption(this.currency_option);
       this.currency_html();
-      //组织参数
-      this.product_currency_param();
-      //请求数据
-      this.request_currency_data(
-        this.get_currency_kParam(),
-        this.get_currency_kData()
-      );
+      this.refresh_data();
     },
     //组织数字货币强求参数对象 与k线值对象
     product_currency_param: function() {
@@ -107,7 +101,7 @@ $(function() {
         coin_show = false;
         var class_name = $(this).attr("class");
 
-        $(".coin_type_tag").attr("src", "./static/images/bottom_2.png");
+        $(".coin_type_tag").attr("src", "./static/images/bottom_1.png");
         $(".coin_list_ul").hide();
 
         if (self.currency_type === class_name) {
@@ -115,26 +109,17 @@ $(function() {
         }
         $(".coin-type span").text($(this).text() + "实时行情");
         self.currency_type = class_name;
-        //请求数据
-        self.currency_chart.clear();
-        self.initChart();
-        self.currency_chart.setOption(self.currency_option);
-        clearInterval(self.setTimer);
-        self.product_currency_param();
-        self.request_currency_data(
-          self.get_currency_kParam(),
-          self.get_currency_kData()
-        );
+        self.refresh_data();
       });
 
       $(".coin-type").on("click tap", function() {
         $(".coin_list_ul").toggle();
         if (coin_show) {
           coin_show = false;
-          $(".coin_type_tag").attr("src", "./static/images/bottom_2.png");
+          $(".coin_type_tag").attr("src", "./static/images/bottom_1.png");
         } else {
           coin_show = true;
-          $(".coin_type_tag").attr("src", "./static/images/top.png");
+          $(".coin_type_tag").attr("src", "./static/images/top_1.png");
         }
       });
 
@@ -163,14 +148,7 @@ $(function() {
         $(".list_ul li").css("color", "#333333");
         $(this).css("color", "#1d73d3");
         $(".list_button span").text($(this).text());
-        self.initChart();
-        self.currency_chart.setOption(self.currency_option);
-        clearInterval(self.setTimer);
-        self.product_currency_param();
-        self.request_currency_data(
-          self.get_currency_kParam(),
-          self.get_currency_kData()
-        );
+        self.refresh_data();
       });
 
       $(".list_button").click("tap click", function() {
@@ -205,6 +183,11 @@ $(function() {
         "<div class='time_content' style='color:#222222'><span class='new-price'><span class='header'></span><span class='middle'></span><span style='color:#707070'><span class='miao'>--</span>秒后更新数据</span></div>";
       $(".content").append(time_html);
     },
+    refresh_data: function() {
+      this.product_currency_param();
+      this.request_currency_data(this.get_currency_kParam());
+      clearInterval(this.setTimer);
+    },
     //定时请求数据
     setTimerAction() {
       var self = this;
@@ -213,20 +196,14 @@ $(function() {
       this.setTimer = setInterval(function() {
         $(".miao").text(total);
         if (total == 0) {
-          clearInterval(self.setTimer);
-          //发起请求
-          self.product_currency_param();
-          self.request_currency_data(
-            self.get_currency_kParam(),
-            self.get_currency_kData()
-          );
+          self.refresh_data();
         } else {
           total = total - 1;
         }
       }, 1000);
     },
     //数字货币k线数据请求
-    request_currency_data: function(param, dataObject) {
+    request_currency_data: function(param) {
       var self = this;
       self.request_loading(true);
       $.ajax({
@@ -235,7 +212,7 @@ $(function() {
         data: param,
         success: function(data) {
           if (data.errorcode == 0) {
-            self.currency_handleData(data.data, dataObject);
+            self.currency_handleData(data.data);
           } else {
             self.request_loading_data();
           }
@@ -244,13 +221,13 @@ $(function() {
       });
     },
     //数字货币k线数据处理
-    currency_handleData: function(data, dataObject) {
+    currency_handleData: function(data) {
       var self = this;
       if (data.length == 0) {
         self.request_loading_data();
         return;
       }
-
+      var dataObject = self.get_currency_kData();
       data.forEach(item => {
         dataObject.xDate.push(item[0]);
         var yData = item.slice(1, 5);
