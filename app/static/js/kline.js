@@ -564,7 +564,7 @@ $(function() {
   try {
     var kline = new CurrencyKLine({
       currency_k_id: "chart",
-      currency_k_intervals: ["1m", "5m", "30m", "1h"],
+      currency_k_intervals: ["1m", "5m", "30m", "1h", "4h", "24h", "7d"],
       currency_type_sources: [["BTC-USD-191227"], ["ETH-USD-191227"]]
     });
     kline.currency_init();
