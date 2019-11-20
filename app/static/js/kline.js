@@ -14,8 +14,6 @@ $(function() {
     this.currency_type_sources = configs.currency_type_sources; //数字货币的种类
 
     this.currency_configs = {
-      // kParamType:'param',//1minparam:{}
-      //   kDataType: "data", //1mindata:{}
       classType: "_class"
     };
     this.currency_request_kdata = {}; //请求k的数据存放对象  weekObject
@@ -75,12 +73,7 @@ $(function() {
               volumnData: [],
               currencyVolumnData: [],
               indexData: [],
-              fzData: [],
-              zcData: [], //支撑线数据
-              qsData: [],
-              yColorData: [],
-              typeCode: 0,
-              spData: [] //支撑阻挡
+              yColorData: []
             };
             self.currency_request_kdata[contract][interval] = data_value;
           });
@@ -128,7 +121,6 @@ $(function() {
         self.initChart();
         self.currency_chart.setOption(self.currency_option);
         clearInterval(self.setTimer);
-        self.currency_data_is_exist();
       });
 
       $(".coin-type").on("click tap", function() {
@@ -145,7 +137,7 @@ $(function() {
       //分钟切换
       var str = "";
       this.currency_k_intervals.forEach(function(value, index) {
-        var className = value + self.currency_configs.classType;
+        var className = value + "_class";
         str += "<li class=" + className + " >" + value + "</li>";
       });
       $(".list_ul").append(str);
@@ -173,7 +165,6 @@ $(function() {
         self.initChart();
         self.currency_chart.setOption(self.currency_option);
         clearInterval(self.setTimer);
-        self.currency_data_is_exist();
       });
 
       $(".list_button").click("tap click", function() {
@@ -197,21 +188,16 @@ $(function() {
         $(".introduce").hide();
         if (self.targetState == $(this).attr("name")) {
           self.targetState = "";
-          // self.currency_chart.clear();
           self.initChart();
-          self.currency_data_is_exist();
           return;
         } else if (self.targetState == "") {
           $(this).addClass("select-target");
           self.targetState = $(this).attr("name");
-          //   self.currency_indicator_is_exit();
         } else {
           $(this).addClass("select-target");
           self.targetState = $(this).attr("name");
-          // self.currency_chart.clear();
           self.initChart();
           self.currency_chart.setOption(self.currency_option);
-          //   self.currency_indicator_is_exit();
         }
         $("div[tag=" + $(this).attr("name") + "]").show();
       });
@@ -223,7 +209,7 @@ $(function() {
     setTimerAction() {
       var self = this;
       clearInterval(self.setTimer);
-      var total = 60;
+      var total = 30;
       this.setTimer = setInterval(function() {
         $(".miao").text(total);
         if (total == 0) {
@@ -232,38 +218,18 @@ $(function() {
           var dataObject = self.get_currency_kData();
           dataObject.yData = [];
           dataObject.xDate = [];
-          dataObject.fzData = [];
-          dataObject.qsData = [];
-          dataObject.spData = [];
-          dataObject.zcData = [];
           dataObject.volumnData = [];
           dataObject.currencyVolumnData = [];
           dataObject.indexData = [];
           dataObject.yColorData = [];
-          //   self.currency_indicator_is_exit();
           self.request_currency_data(
-            this.get_currency_kParam(),
-            this.get_currency_kData()
+            self.get_currency_kParam(),
+            self.get_currency_kData()
           );
         } else {
           total = total - 1;
         }
       }, 1000);
-    },
-
-    //请数字货币k线前 判断本地是否有该数据
-    currency_data_is_exist: function() {
-      var dataObject = this.get_currency_kData();
-      if (dataObject.yData.length > 0 && dataObject.xDate.length > 0) {
-        if (this.targetState == "") {
-          this.handle_settime_title(dataObject);
-          this.product_k_option(dataObject); //画k线
-        } else {
-          //   this.currency_indicator_is_exit();
-        }
-      } else {
-        this.request_currency_data(this.get_currency_kParam(), dataObject);
-      }
     },
     //数字货币k线数据请求
     request_currency_data: function(param, dataObject) {
@@ -283,28 +249,8 @@ $(function() {
         error: function() {}
       });
     },
-    request_kuayu_currency_data: function() {
-      var self = this;
-      self.request_loading(true);
-      $.ajax({
-        type: "get",
-        url: "/currency/kline",
-        data: param,
-        dataType: "JSONP",
-        success: function(data) {
-          var _data = data;
-          if (_data.code == "OK") {
-            self.currency_handleData(_data.data, dataObject);
-          } else {
-            self.request_loading_data();
-          }
-        },
-        error: function() {}
-      });
-    },
     //数字货币k线数据处理
     currency_handleData: function(data, dataObject) {
-      // TODO:
       var self = this;
       if (data.length == 0) {
         self.request_loading_data();
@@ -384,8 +330,17 @@ $(function() {
     //
     handle_settime_title: function(dataObject) {
       var self = this;
-      var oldValue = dataObject.yData[dataObject.yData.length - 2][1];
-      var newValue = dataObject.yData[dataObject.yData.length - 1][1];
+      // 最后一个价格不完整 不显示
+      var oldValue = dataObject.yData[dataObject.yData.length - 3][1];
+      var newValue = dataObject.yData[dataObject.yData.length - 2][1];
+      document.title =
+        "$" +
+        newValue +
+        "-" +
+        self.currency_type.split("-")[0] +
+        "-" +
+        self.currency_k_interval +
+        "|看盘平台";
       if (newValue > oldValue) {
         $(".new-price .header").css("color", "#008000");
       } else if (newValue === oldValue) {
@@ -632,490 +587,13 @@ $(function() {
       return this.currency_request_kparam[this.currency_type][
         this.currency_k_interval
       ];
-    },
-    //==========指标的处理函数=========
-    //组织指标的参数
-    product_indicator_param: function() {
-      var indicator_param = {
-        use_last: "on",
-        symbol: this.currency_type,
-        // line_type:this.currency_k_interval,
-        line_type: this.targetState,
-        bar_interval: this.currency_k_interval
-      };
-      return indicator_param;
-    },
-    //判断指标数据是否存在
-    currency_indicator_is_exit: function() {
-      var dataObject = this.get_currency_kData();
-      if (dataObject.yData.length === 0 && dataObject.xDate.length === 0) {
-        //k线数据不存在
-        this.request_currency_data(this.get_currency_kParam(), dataObject);
-      } else {
-        //k线数据存在
-        //判断指标数据是否存在 请求指标数据
-        // if (this.targetState === this.targetStateValue.fz) {
-        //   if (dataObject.fzData.length > 0) {
-        //     this.currency_option.series[0].markPoint.data = dataObject.fzData;
-        //     this.currency_option.series[0].markLine.data = dataObject.zcData;
-        //     this.product_k_option(dataObject); //画k线
-        //   } else {
-        //     // this.request_indicator_data(this.product_indicator_param());
-        //   }
-        // } else if (this.targetState === this.targetStateValue.qs) {
-        //   if (dataObject.qsData.length > 0) {
-        //     this.currency_option.series[0].markPoint.data = dataObject.qsData;
-        //     this.product_k_option(dataObject); //画k线
-        //   } else {
-        //     // this.request_indicator_data(this.product_indicator_param());
-        //   }
-        // } else if (this.targetState === this.targetStateValue.sp) {
-        //   if (dataObject.spData.length > 0) {
-        //     this.currency_option.series[0].markLine.data = dataObject.spData;
-        //     this.product_k_option(dataObject); //画k线
-        //   } else {
-        //     // this.request_indicator_data(this.product_indicator_param());
-        //   }
-        // }
-      }
-    },
-    //请求指标数据
-    // request_indicator_data: function(param) {
-    //   if (this.fromType === "kuayu") {
-    //     this.request_kuayu_indecator_data();
-    //   } else {
-    //     var self = this;
-    //     self.request_loading(true);
-    //     $.ajax({
-    //       type: "get",
-    //       url: self.currency_server_target,
-    //       data: param,
-    //       success: function(data) {
-    //         if (data.errorcode == 0) {
-    //           if (self.targetState === self.targetStateValue.qs) {
-    //             self.handle_qs_Data(data, self.get_currency_kData());
-    //           } else if (self.targetState === self.targetStateValue.fz) {
-    //             self.handle_fz_data(data, self.get_currency_kData());
-    //           } else if (self.targetState === self.targetStateValue.sp) {
-    //             self.handle_sp_data(data, self.get_currency_kData());
-    //           }
-    //         } else {
-    //           self.request_loading_data();
-    //         }
-    //       },
-    //       error: function() {
-    //         self.request_loading_data();
-    //       }
-    //     });
-    //   }
-    // },
-    request_kuayu_indecator_data: function() {
-      //   var self = this;
-      //   self.request_loading(true);
-      //   $.ajax({
-      //     type: "get",
-      //     url: "/currency/kmagic",
-      //     data: param,
-      //     dataType: "JSONP",
-      //     success: function(data) {
-      //       var _data = data;
-      //       if (_data.errorcode == 0) {
-      //         if (self.targetState === self.targetStateValue.qs) {
-      //           self.handle_qs_Data(_data, self.get_currency_kData());
-      //         } else if (self.targetState === self.targetStateValue.fz) {
-      //           self.handle_fz_data(_data, self.get_currency_kData());
-      //         } else if (self.targetState === self.targetStateValue.sp) {
-      //           self.handle_sp_data(_data, self.get_currency_kData());
-      //         }
-      //       } else {
-      //         self.request_loading_data();
-      //       }
-      //     },
-      //     error: function() {
-      //       self.request_loading_data();
-      //     }
-      //   });
-    },
-    //处理qs数据
-    handle_qs_Data: function(_data, dataObject) {
-      var self = this;
-      //   var tempArray = [];
-      //   var data = _data.data.data;
-      //   data.push(data[data.length - 1]);
-      //   var feature = data[0].feature;
-
-      //   var same = 0;
-      //   for (var i = 0; i < data.length; i++) {
-      //     var temp = data[i];
-      //     var trade_date = temp.trade_date;
-      //     if (trade_date === dataObject.xDate[0]) {
-      //       same = i;
-      //       break;
-      //     }
-      //   }
-      //   data = data.slice(same);
-      for (var i = 0; i < data.length; i++) {
-        var temp = data[i];
-        var yData, symbolOffset, symbolRotate;
-        var trade_date = temp.trade_date;
-        var url, coord, itemStyle;
-        if (temp.feature == "-1.0") {
-          var index = dataObject.xDate.indexOf(trade_date);
-          if (index != -1) {
-            yData = dataObject.yData[index][3];
-          }
-          symbolOffset = [0, "-5px"];
-          symbolRotate = 180;
-          itemStyle = {
-            normal: {
-              color: "white",
-              color0: self.color_style.sFD1050,
-              borderColor: self.color_style.sFD1050,
-              borderColor0: self.color_style.sFD1050,
-              borderWidth: 0.5
-            }
-          };
-        }
-        if (temp.feature == "1.0") {
-          var index = dataObject.xDate.indexOf(trade_date);
-          if (index != -1) {
-            if (dataObject.yData[index]) {
-              yData = dataObject.yData[index][2];
-            }
-          }
-          symbolOffset = [0, "60%"];
-          symbolRotate = 0;
-          itemStyle = {
-            normal: {
-              color: "white",
-              color0: self.color_style.s0CF49B,
-              borderColor: self.color_style.s0CF49B,
-              borderColor0: self.color_style.s0CF49B,
-              borderWidth: 0.5
-            }
-          };
-        }
-        coord = [trade_date, yData];
-        var colorObj = {
-          //k线颜色
-          value: dataObject.yData[i],
-          itemStyle: itemStyle
-        };
-
-        var obj = {
-          symbolSize: "6",
-          symbol: "image:./static/images/k-top.png",
-          symbolRotate: symbolRotate,
-          symbolOffset: symbolOffset,
-          coord: coord,
-          label: {
-            normal: {
-              show: true,
-              position: "top",
-              formatter: "{b}",
-              textStyle: {
-                fontStyle: "oblique",
-                color: "rgba(255,255,255,0)"
-              }
-            }
-          },
-          itemStyle: {
-            normal: { color: "" }
-          }
-        };
-        dataObject.yColorData.push(colorObj);
-        tempArray.push(obj);
-        if (i == 0 || feature != temp.feature) {
-          if (i == 0) {
-            dataObject.qsData.push(obj);
-          }
-          if (feature != temp.feature) {
-            dataObject.qsData.push(tempArray[i]);
-          }
-          feature = temp.feature;
-        }
-      }
-      dataObject.yColorData[
-        dataObject.yColorData.length - 1
-      ].itemStyle.normal = {
-        color: "#999999",
-        color0: "#999999",
-        borderColor: "#999999",
-        borderColor0: "#999999",
-        borderWidth: 0.5
-      };
-
-      self.currency_option.series[0].markPoint.data = dataObject.qsData;
-      self.product_k_option(dataObject);
-      self.request_loading(false);
-    },
-
-    handle_fz_data: function(_data, dataObject) {
-      var self = this;
-      var maxArray = _data.data.data;
-      maxArray.push(maxArray[maxArray.length - 1]);
-      var same = 0;
-      for (var i = 0; i < maxArray.length; i++) {
-        var temp = maxArray[i];
-        var trade_date = temp.trade_date;
-        if (trade_date === dataObject.xDate[0]) {
-          same = i;
-          break;
-        }
-      }
-      maxArray = maxArray.slice(same);
-      var lengthArray = maxArray.length;
-      for (var i = 0; i < lengthArray; i++) {
-        var trade_date = maxArray[i].trade_date;
-        var setup = maxArray[i].setup;
-        var index = dataObject.xDate.indexOf(trade_date);
-        if (setup != "" && index != -1) {
-          var intSetup = parseInt(setup);
-          var coord, value, color, position;
-          if (intSetup > 0) {
-            var y = dataObject.yData[index][3];
-            coord = [trade_date, y];
-            value = intSetup;
-            if (value == 9) {
-              color = self.color_style.sFD1050;
-            } else {
-              color = "#999999";
-            }
-            position = "top";
-          } else if (setup < 0) {
-            var y = dataObject.yData[index][2];
-            coord = [trade_date, y];
-            value = -intSetup;
-            if (value == 9) {
-              color = self.color_style.s0CF49B;
-            } else {
-              color = "#999999";
-            }
-            position = "bottom";
-          }
-          var obj = {
-            coord: coord,
-            value: value,
-            itemStyle: {
-              normal: { color: color }
-            },
-            label: {
-              normal: {
-                position: position,
-                textStyle: {
-                  fontSize: "8"
-                }
-              }
-            }
-          };
-          dataObject.fzData.push(obj);
-        }
-
-        //支撑阻挡
-        if (i < lengthArray - 1) {
-          var ZDArray = [];
-          var ZDOneObj = {};
-
-          var ZCArray = [];
-          var ZCOneObj = {};
-
-          var zhicheng = maxArray[i].TD_S;
-          var zudang = maxArray[i].TD_D;
-
-          if (zhicheng != maxArray[i + 1].TD_S) {
-            if (dataObject.zcData.length - 2 >= 0) {
-              dataObject.zcData[dataObject.zcData.length - 2][0].name =
-                "支撑线";
-            }
-          } else {
-            var oneArray = [maxArray[i].trade_date, zhicheng];
-            var towArray = [maxArray[i + 1].trade_date, zhicheng];
-            ZCOneObj = {
-              name: "",
-              coord: oneArray,
-              lineStyle: {
-                normal: {
-                  color: self.color_style.s02c468
-                }
-              }
-            };
-            var ZCTowObj = {
-              coord: towArray
-            };
-            ZCArray.push(ZCOneObj);
-            ZCArray.push(ZCTowObj);
-            dataObject.zcData.push(ZCArray);
-          }
-
-          if (zudang != maxArray[i + 1].TD_D) {
-            if (
-              dataObject.zcData.length - 2 >= 0 &&
-              dataObject.zcData[dataObject.zcData.length - 2][0].lineStyle
-                .normal.color == self.color_style.sFD1050
-            ) {
-              dataObject.zcData[dataObject.zcData.length - 2][0].name =
-                "阻挡线";
-            }
-          } else {
-            var oneArray = [maxArray[i].trade_date, zudang];
-            var towArray = [maxArray[i + 1].trade_date, zudang];
-            ZDOneObj = {
-              name: "",
-              coord: oneArray,
-              lineStyle: {
-                normal: {
-                  color: self.color_style.sFD1050
-                }
-              }
-            };
-            var ZDTowObj = {
-              coord: towArray
-            };
-            ZDArray.push(ZDOneObj);
-            ZDArray.push(ZDTowObj);
-            dataObject.zcData.push(ZDArray);
-          }
-        }
-      }
-      self.currency_option.series[0].markPoint.data = dataObject.fzData;
-      self.currency_option.series[0].markLine.data = dataObject.zcData;
-      self.product_k_option(dataObject);
-      self.request_loading(false);
-    },
-
-    handle_sp_data: function(_data, dataObject) {
-      var maxArray = _data.data.data;
-      var zc_color = "";
-      var zd_color = "";
-      var sp_color = 0;
-      if (sp_color === 0) {
-        zc_color = this.color_style.s0CF49B;
-        zd_color = this.color_style.sed3368;
-      } else {
-        zd_color = "blue";
-        zc_color = "red";
-      }
-
-      var lengthArray = maxArray.length;
-      for (var i = 0; i < lengthArray; i++) {
-        if (i < lengthArray - 1) {
-          var ZDArray = [];
-          var ZDOneObj = {};
-
-          var ZCArray = [];
-          var ZCOneObj = {};
-
-          var zhicheng = maxArray[i].support;
-          var zudang = maxArray[i].block;
-
-          //支撑
-          var oneArray = [maxArray[i].trade_date, zhicheng];
-          var towArray = [maxArray[i + 1].trade_date, maxArray[i + 1].support];
-
-          if (i == 0) {
-            ZCOneObj = {
-              name: "",
-              coord: oneArray,
-              lineStyle: {
-                normal: {
-                  color: zc_color
-                }
-              },
-              label: {
-                normal: {
-                  show: true,
-                  position: "start",
-                  formatter: function(param) {
-                    return (param.name = "支撑线");
-                  }
-                }
-              }
-            };
-          } else {
-            ZCOneObj = {
-              name: "",
-              coord: oneArray,
-              lineStyle: {
-                normal: {
-                  color: zc_color
-                }
-              }
-            };
-          }
-          var ZCTowObj = {
-            coord: towArray
-          };
-          ZCArray.push(ZCOneObj);
-          ZCArray.push(ZCTowObj);
-          dataObject.spData.push(ZCArray);
-
-          var oneArrayZu = [maxArray[i].trade_date, zudang];
-          var towArrayZu = [maxArray[i + 1].trade_date, maxArray[i + 1].block];
-          if (i == 0) {
-            ZDOneObj = {
-              name: "",
-              coord: oneArrayZu,
-              lineStyle: {
-                normal: {
-                  color: zd_color
-                }
-              },
-              label: {
-                normal: {
-                  show: true,
-                  position: "start",
-                  formatter: function(param) {
-                    return (param.name = "阻挡线");
-                  }
-                }
-              }
-            };
-          } else {
-            ZDOneObj = {
-              name: "",
-              coord: oneArrayZu,
-              lineStyle: {
-                normal: {
-                  color: zd_color
-                }
-              }
-            };
-          }
-          var ZDTowObj = {
-            coord: towArrayZu
-          };
-          ZDArray.push(ZDOneObj);
-          ZDArray.push(ZDTowObj);
-          dataObject.spData.push(ZDArray);
-          //阻挡
-        }
-      }
-      this.currency_option.series[0].markLine.data = dataObject.spData;
-      this.product_k_option(dataObject);
-      this.request_loading(false);
-    },
-
-    timeNumberChange: function(timestamp) {
-      var d = new Date(timestamp * 1000); //根据时间戳生成的时间对象
-      return (date =
-        d.getFullYear() +
-        "/" +
-        (d.getMonth() + 1) +
-        "/" +
-        d.getDate() +
-        " " +
-        d.getHours() +
-        ":" +
-        d.getMinutes() +
-        ":" +
-        d.getSeconds());
     }
   };
 
   try {
     var kline = new CurrencyKLine({
       currency_k_id: "chart",
-      currency_k_intervals: ["30m", "1m", "30m", "1h"],
+      currency_k_intervals: ["1m", "5m", "30m", "1h"],
       currency_type_sources: [["BTC-USD-191227"], ["ETH-USD-191227"]]
     });
     kline.currency_init();
