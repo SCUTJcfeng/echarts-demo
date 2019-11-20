@@ -103,7 +103,6 @@ $(function() {
         coin_str += "</div>";
       });
       $(".coin_list_ul").append(coin_str);
-      // $('.coin_list_ul li:nth-child(2)').css('color','#1d73d3');
       $(".coin_list_ul li").on("click tap", function() {
         coin_show = false;
         var class_name = $(this).attr("class");
@@ -121,6 +120,11 @@ $(function() {
         self.initChart();
         self.currency_chart.setOption(self.currency_option);
         clearInterval(self.setTimer);
+        self.product_currency_param();
+        self.request_currency_data(
+          self.get_currency_kParam(),
+          self.get_currency_kData()
+        );
       });
 
       $(".coin-type").on("click tap", function() {
@@ -141,46 +145,42 @@ $(function() {
         str += "<li class=" + className + " >" + value + "</li>";
       });
       $(".list_ul").append(str);
-      $(".list_ul li:nth-child(5)").css("color", "#1d73d3");
+      $(".list_ul li:nth-child(2)").css("color", "#1d73d3");
       var show = false;
       $(".list_ul li").on("click tap", function() {
-        var className = $(this).attr("class");
-        var arr = className.split("_");
-        var type = arr[0];
+        var interval = $(this)
+          .attr("class")
+          .split("_")[0];
 
         $(".list_ul").toggle();
         show = false;
-        $(".list_button_tag").attr(
-          "src",
-          "http://mct.ap-coin.com/static/images/3_bottom.png"
-        );
+        $(".list_button_tag").attr("src", "./static/images/bottom_2.png");
 
-        if (self.currency_k_interval === type) {
+        if (self.currency_k_interval === interval) {
           return;
         }
-        self.currency_k_interval = type;
+        self.currency_k_interval = interval;
         $(".list_ul li").css("color", "#333333");
         $(this).css("color", "#1d73d3");
         $(".list_button span").text($(this).text());
         self.initChart();
         self.currency_chart.setOption(self.currency_option);
         clearInterval(self.setTimer);
+        self.product_currency_param();
+        self.request_currency_data(
+          self.get_currency_kParam(),
+          self.get_currency_kData()
+        );
       });
 
       $(".list_button").click("tap click", function() {
         $(".list_ul").toggle();
         if (show) {
           show = false; //隐藏
-          $(".list_button_tag").attr(
-            "src",
-            "http://mct.ap-coin.com/static/images/3_bottom.png"
-          );
+          $(".list_button_tag").attr("src", "./static/images/bottom_2.png");
         } else {
           show = true; //显示
-          $(".list_button_tag").attr(
-            "src",
-            "http://mct.ap-coin.com/static/images/3_top.png"
-          );
+          $(".list_button_tag").attr("src", "./static/images/top_3.png");
         }
       });
       $(".target").on("click tap", function() {
@@ -215,13 +215,7 @@ $(function() {
         if (total == 0) {
           clearInterval(self.setTimer);
           //发起请求
-          var dataObject = self.get_currency_kData();
-          dataObject.yData = [];
-          dataObject.xDate = [];
-          dataObject.volumnData = [];
-          dataObject.currencyVolumnData = [];
-          dataObject.indexData = [];
-          dataObject.yColorData = [];
+          self.product_currency_param();
           self.request_currency_data(
             self.get_currency_kParam(),
             self.get_currency_kData()
@@ -450,8 +444,8 @@ $(function() {
       this.currency_option = {
         backgroundColor: "white",
         calculable: false,
-        smooth: false,
-        animation: false,
+        smooth: true,
+        animation: true,
         dataZoom: [
           {
             type: "inside",
