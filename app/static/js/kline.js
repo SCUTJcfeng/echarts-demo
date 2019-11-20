@@ -227,6 +227,7 @@ $(function() {
         self.request_loading_data();
         return;
       }
+      var tmpFeature = data[0][7];
       var dataObject = self.get_currency_kData();
       data.forEach(item => {
         dataObject.xDate.push(item[0]);
@@ -234,7 +235,7 @@ $(function() {
         dataObject.yData.push(yData);
         dataObject.volumnData.push(item[5]);
         dataObject.currencyVolumnData.push(item[6]);
-        if (item[7] == -1) {
+        if (item[7] == "-1.0") {
           var yCoord = yData[3];
           symbolOffset = [0, "-5px"];
           symbolRotate = 180;
@@ -247,7 +248,7 @@ $(function() {
               borderWidth: 0.5
             }
           };
-        } else {
+        } else if (item[7] == "1.0") {
           var yCoord = yData[2];
           symbolOffset = [0, "60%"];
           symbolRotate = 0;
@@ -287,7 +288,10 @@ $(function() {
             normal: { color: "" }
           }
         };
-        dataObject.indexData.push(obj);
+        if (tmpFeature != item[7]) {
+          dataObject.indexData.push(obj);
+          tmpFeature = item[7];
+        }
       });
       self.product_k_option(dataObject);
       self.request_loading(false);
@@ -558,13 +562,28 @@ $(function() {
       return this.currency_request_kparam[this.currency_type][
         this.currency_k_interval
       ];
+    },
+    calcMA(dayCount, data) {
+      var result = [];
+      for (var i = 0, len = data.length; i < len; i++) {
+        if (i < dayCount) {
+          result.push("-");
+          continue;
+        }
+        var sum = 0;
+        for (var j = 0; j < dayCount; j++) {
+          sum += data[i - j][1];
+        }
+        result.push((sum / dayCount).toFixed(2));
+      }
+      return result;
     }
   };
 
   try {
     var kline = new CurrencyKLine({
       currency_k_id: "chart",
-      currency_k_intervals: ["1m", "5m", "30m", "1h", "4h", "24h", "7d"],
+      currency_k_intervals: ["1m", "5m", "30m", "1h", "4h", "1d", "7d"],
       currency_type_sources: [["BTC-USD-191227"], ["ETH-USD-191227"]]
     });
     kline.currency_init();

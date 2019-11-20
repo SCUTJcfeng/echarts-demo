@@ -3,7 +3,7 @@
 '''
 Author: jc feng
 File Created: 2019-11-19 00:05:40
-Last Modified: 2019-11-21 00:04:47
+Last Modified: 2019-11-21 01:06:59
 '''
 
 
@@ -13,7 +13,7 @@ from flask import request
 from app import app
 from app.util import proxy
 from app.util.package_tool import PackageTool
-from app.util.time_helper import convert_to_local_time, INTERVAL_MAP
+from app.util.time_helper import convert_to_local_time, INTERVAL_MAP, str_to_datetime
 
 
 @app.route('/api/kline/okex/contracts', methods=['GET'])
@@ -36,8 +36,38 @@ def get_kline():
         new_data_list.append(
             [convert_to_local_time(ts, interval), float(o), float(c), float(l), float(h), int(v), float(cv)]
         )
-    result = calc_golden_finger(new_data_list)
+    if interval in ['5m', '30m', '1h', '4h', '1d'] and contract.find('BTC') != -1:
+        result = combine_golden_finger(new_data_list, interval)
+    else:
+        result = calc_golden_finger(new_data_list)
     return PackageTool.response_suc(result)
+
+
+def combine_golden_finger(data_list, interval):
+    ap_data_list = get_ap_coin_data('btc', interval)
+    if len(ap_data_list) > len(data_list):
+        ap_data_list = ap_data_list[: len(data_list)]
+    elif len(ap_data_list) < len(data_list):
+        for i in range(len(data_list) - len(ap_data_list)):
+            ap_data_list.append({'feature': '', 'trade_date': '19/11/19 23:40'})
+    index = 0
+    # for data in data_list:
+    #     ap_data = ap_data_list[index]
+    #     ap_time, ok_time = str_to_datetime(ap_data['trade_date']), str_to_datetime(data[0])
+    #     feature = ap_data_list[index]['feature'] if ap_time == ok_time else ''
+    #     data.append(feature)
+    #     index += 1
+    for data in data_list:
+        data.append(ap_data_list[index]['feature'])
+        index += 1
+    return data_list
+
+
+def get_ap_coin_data(symbol, interval):
+    # 5m 30m 1h 4h 1d
+    url = f'https://mct.ap-coin.com/currency/kmagic?use_last=on&symbol={symbol}_us&line_type=golden_finger&bar_interval=30m'
+    data = requests.get(url).json()
+    return data['data']['data']
 
 
 # 临时
